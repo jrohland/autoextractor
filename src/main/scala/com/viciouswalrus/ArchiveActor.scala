@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import com.github.junrar.extract.ExtractArchive
-import com.roundeights.hasher.Algo
+import com.google.common.hash.Hashing
 import org.apache.logging.log4j.scala.Logging
 
 import scala.collection.mutable
@@ -80,14 +80,16 @@ class ArchiveActor(inputPath: Path, outputPath: Path, directoryMonitor: ActorRef
   }
 
   private def checkArchiveSFV(): Boolean = {
+    val crc32Hash = Hashing.crc32()
+
     val badFiles = rarFiles.filter(rarFile => {
       val filename = rarFile.path.getFileName.toString
+
       logger.debug("Checking crc32 for " + filename)
-      val stream = Algo.crc32.tap(Files.newInputStream(rarFile.path))
-      while ( stream.read() != -1 ) {}
-      val hash = stream.hash
-      logger.debug("crc32: " + hash)
-      hash.toString() != sfvFile.fileContents(filename)
+      val hash = com.google.common.io.Files.asByteSource(rarFile.path.toFile).hash(crc32Hash)
+
+      logger.debug("crc32: " + hash.toString)
+      hash.toString != sfvFile.fileContents(filename)
     })
 
     if (badFiles.nonEmpty) {
@@ -99,7 +101,7 @@ class ArchiveActor(inputPath: Path, outputPath: Path, directoryMonitor: ActorRef
       logger.debug("All files are good")
     }
 
-    badFiles.nonEmpty
+    badFiles.isEmpty
   }
 
 }
