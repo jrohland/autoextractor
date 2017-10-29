@@ -16,7 +16,7 @@ object ArchiveActor {
 
 class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging {
 
-  private val rarFiles = mutable.MutableList.empty[RarPart]
+  private val rarFiles = mutable.MutableList.empty[Path]
   private var sfvFile: Sfv = _
   private var archiveComplete = false
 
@@ -24,10 +24,9 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
     val extension = filePath.toFile.toString.substring(filePath.toFile.toString.lastIndexOf('.') + 1).toLowerCase
     if (extension.startsWith("r")) {
       rarFiles.synchronized {
-        val rarFile = RarPart(filePath)
-        if (!rarFiles.contains(rarFile)) {
+        if (!rarFiles.contains(filePath)) {
           logger.debug("Rar file detected: " + filePath)
-          rarFiles += RarPart(filePath)
+          rarFiles += filePath
         }
       }
     } else if (extension.equals("sfv")) {
@@ -43,7 +42,7 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
   checkIfArchiveIsComplete()
 
   override def receive: PartialFunction[Any, Unit] = {
-    case file: RarPart =>
+    case RarPart(file) =>
       rarFiles.synchronized {
         if (!rarFiles.contains(file)) {
           logger.debug("received rar file")
@@ -66,7 +65,7 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
       if (!archiveComplete) {
         if (sfvFile != null && rarFiles.length >= sfvFile.fileContents.size) {
           val foundFiles = rarFiles.map(file => {
-            file.path.getFileName.toString
+            file.getFileName.toString
           }).toSet
 
           val missingFiles = sfvFile.fileContents.keys.filter(fileName => {
@@ -80,7 +79,7 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
 
             logger.debug("Extracting archive: " + inputPath.getFileName.toString)
             val rarFile = rarFiles.filter(file => {
-              val extension = file.path.toString.substring(file.path.toString.lastIndexOf('.') + 1).toLowerCase
+              val extension = file.toString.substring(file.toString.lastIndexOf('.') + 1).toLowerCase
               extension == "rar"
             }).head
 
@@ -88,7 +87,7 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
             Files.createDirectory(newOutputDir)
 
             val extractor = new ExtractArchive()
-            extractor.extractArchive(rarFile.path.toFile, newOutputDir.toFile)
+            extractor.extractArchive(rarFile.toFile, newOutputDir.toFile)
             logger.info("Done extracting " + inputPath.getFileName.toString)
 
             archiveComplete = true
