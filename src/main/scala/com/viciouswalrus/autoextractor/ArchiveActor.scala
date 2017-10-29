@@ -20,6 +20,8 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
   private var sfvFile: Sfv = _
   private var archiveComplete = false
 
+  logger.info("Watching for archive in " + inputPath.getFileName.toString)
+
   Files.list(inputPath).forEach(filePath => {
     val extension = filePath.toFile.toString.substring(filePath.toFile.toString.lastIndexOf('.') + 1).toLowerCase
     if (extension.startsWith("r")) {
@@ -77,7 +79,7 @@ class ArchiveActor(inputPath: Path, outputPath: Path) extends Actor with Logging
           } else {
             logger.debug("Archive complete")
 
-            logger.debug("Extracting archive: " + inputPath.getFileName.toString)
+            logger.info("Extracting archive: " + inputPath.getFileName.toString)
             val rarFile = rarFiles.filter(file => {
               val extension = file.toString.substring(file.toString.lastIndexOf('.') + 1).toLowerCase
               extension == "rar"

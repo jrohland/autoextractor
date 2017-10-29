@@ -44,7 +44,7 @@ class WatchServiceTask(notifyActor: ActorRef) extends Runnable with Logging {
       }
     } catch {
       case e: InterruptedException =>
-        logger.info("Interrupting, bye!")
+        logger.debug("Interrupting, bye!")
     } finally {
       watchService.close()
     }
