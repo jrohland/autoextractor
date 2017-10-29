@@ -1,4 +1,4 @@
-package com.viciouswalrus
+package com.viciouswalrus.autoextractor
 
 import java.nio.file.Path
 
